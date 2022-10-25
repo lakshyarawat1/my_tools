@@ -2,17 +2,20 @@ import os
 import os.path
 import argparse 
 from cryptography.fernet import Fernet
+import pandas as pd
+
 
 def image() :
-    print('''                                            _                                               
-  _ __   __ _ ___ _____      _____  _ __ __| |  _ __ ___   __ _ _ __   __ _  __ _  ___ _ __ 
- | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` | | '_ ` _ \ / _` | '_ \ / _` |/ _` |/ _ \ '__|
- | |_) | (_| \__ \__ \\\ V  V / (_) | | | (_| | | | | | | | (_| | | | | (_| | (_| |  __/ |   
- | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_| |_| |_| |_|\__,_|_| |_|\__,_|\__, |\___|_|   
- |_|                                                                        |___/           ''')
+    print('''                                                                               _                                               
+                                     _ __   __ _ ___ _____      _____  _ __ __| |  _ __ ___   __ _ _ __   __ _  __ _  ___ _ __ 
+                                    | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` | | '_ ` _ \ / _` | '_ \ / _` |/ _` |/ _ \ '__|
+                                    | |_) | (_| \__ \__ \\\ V  V / (_) | | | (_| | | | | | | | (_| | | | | (_| | (_| |  __/ |   
+                                    | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_| |_| |_| |_|\__,_|_| |_|\__,_|\__, |\___|_|   
+                                    |_|                                                                        |___/           ''')
 
 def intro() :
-    print('Welcome to CODE-IO Password Manager')
+    print('                                                      Welcome to CODE-IO Password Manager\n')
+    
 
 def checkExistence():
     if os.path.exists('passwords.txt'):
@@ -34,8 +37,9 @@ def verify() :
         print('Verified \n Welcome !! ')
         return 1
     else :
-        print('Invalid Credentials \n Terminating')
+        print('Invalid Credentials \n\t Terminating')
         intro()
+        image()
         return 0
 
 def appendNew() :
@@ -47,27 +51,28 @@ def appendNew() :
     userName = input("Enter the username : ")
     password = input("Enter the password : ")
     website = input("Enter the website : ")
+    info = input('Enter other information you want to add : ')
     
     print()
     print()
     
-    username = "Username : " + userName + '\n'
-    passwrd = "Password : " + password + '\n'
-    w3site = "Website : " + website + '\n'
+    data = {
+        "Username" : [userName],
+        "Password" : [password],
+        "Website" : [website],
+        "Other Information" : [info]
+    }
     
-    file.write('--------------------------------------------------------\n')
-    file.write(username)
-    file.write(passwrd)
-    file.write(w3site)
-    file.write('---------------------------------------------------------\n')
-    file.write('\n')
+    df = pd.DataFrame(data)
+    
+    file.write(df.to_string())
     file.close()
     
+
 def readPassword() :
-    file = open('passwords.txt', 'r')
-    content = file.read()
-    file.close()
-    print(content)
+    file = open('passwords.txt','rb')
+    df = pd.read_csv(file)
+    print(df)
     
 def encrypt() :
     checkKey()
@@ -100,6 +105,13 @@ def decrypt() :
     with open('passwords.txt','wb') as dec_file :
         dec_file.write(decrypted)
 
+def findByUserName() :
+    file = open('passwords.txt','rb')
+    df = pd.read_csv(file)
+    file.close()
+    userName = input("Enter your username : ")
+    print(df[0:1].where(df[1] == userName))
+
 def clearFile() :
     checkExistence()
     checkKey()
@@ -114,11 +126,12 @@ def clearFile() :
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-i','--intro', help='This is the default argument', default=1)
-parser.add_argument('-r', '--write', help= " Lets you enter your passwords  ", action='store_true')
-parser.add_argument('-s','--search', help='Lets you search a specific password ', action='store_true')
+parser.add_argument('-w', '--write', help= " Lets you enter your passwords  ", action='store_true')
+parser.add_argument('-s','--show', help='prints all the passwords ', action='store_true')
 parser.add_argument('-e', '--encrypt', help='Encrypts the file', action='store_true')
 parser.add_argument('-d','--decrypt', help='Decrypts the file', action='store_true')
 parser.add_argument('-x','--delete',help='deletes the password file', action='store_true' )
+parser.add_argument('-f','--find', help='Lets you search a specfic password')
 
 args = parser.parse_args()
 
@@ -135,20 +148,37 @@ if args.write :
     else : 
         appendNew()
     
-if args.search :
+if args.show :
     checkExistence()
-    if os.path.getsize('passwords.txt') == 0 :
-        print("List is empty")
+    verified = verify()
+    if verified == 0 :
+        pass
     else :
-        readPassword()
+        if os.path.getsize('passwords.txt') == 0 :
+            print("List is empty")
+        else :
+            readPassword()
+            
+if args.find :
+    checkExistence()
+    choice = args.find
+    if choice == 'username' or choice == 'Username' :
+        findByUserName()
+    
+
 if args.encrypt :
     checkExistence()
     encrypt()
     
 if args.decrypt :
     checkExistence()
-    verify()
-    decrypt()
+    verified = verify()
+    if verified == 0 :
+        intro()
+        image()
+        pass
+    else :
+        decrypt()
     
 if args.delete :
     clearFile()
